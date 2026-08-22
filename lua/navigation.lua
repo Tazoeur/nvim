@@ -44,7 +44,38 @@ require('telescope').setup {
     end, { desc = '[S]earch [H]idden files' })
     vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = 'Search select Telescope' })
     vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = 'Search current word' })
-    vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = 'Search by grep' })
+    vim.keymap.set('n', '<leader>sg', function()
+      -- Live grep, but a leading token containing "*" (e.g. "*.sql pattern")
+      -- is peeled off and used as a --glob filter instead of search text.
+      local finders = require 'telescope.finders'
+      local sorters = require 'telescope.sorters'
+      local make_entry = require 'telescope.make_entry'
+      local conf = require('telescope.config').values
+      local flatten = require('telescope.utils').flatten
+
+      local grepper = finders.new_job(function(prompt)
+        if not prompt or prompt == '' then
+          return nil
+        end
+
+        local glob, search = prompt:match '^(%S*%*%S*)%s+(.*)$'
+        local extra_args = {}
+        if glob then
+          extra_args = { '--glob=' .. glob }
+        else
+          search = prompt
+        end
+
+        return flatten { conf.vimgrep_arguments, extra_args, '--', search }
+      end, make_entry.gen_from_vimgrep {}, nil, nil)
+
+      require('telescope.pickers').new({}, {
+        prompt_title = 'Live Grep',
+        finder = grepper,
+        previewer = conf.grep_previewer {},
+        sorter = sorters.highlighter_only {},
+      }):find()
+    end, { desc = 'Search by grep (supports "*.ext pattern")' })
     vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = 'Search diagnostics' })
     vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = 'Search Resume' })
     vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = 'Search Recent Files' })

@@ -50,3 +50,9 @@ function reload_config()
 	vim.notify('Neovim configuration file reloaded', vim.log.levels.INFO)
 end
 vim.keymap.set('n', '<leader>r', reload_config)
+
+vim.keymap.set('n', '<leader>cp', function()
+  local file_path = vim.fn.expand('%')
+  vim.fn.setreg('+', file_path)
+  vim.notify("File path copied to clipboard (" .. file_path .. ")")
+end, { desc = "Copy relative file path to clipboard" })
