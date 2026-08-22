@@ -176,3 +176,12 @@ vim.api.nvim_create_autocmd("PackChanged", {
 		end
 	end,
 })
+
+local ts_langs = { "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline", "yaml" }
+require("nvim-treesitter").install(ts_langs)
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = ts_langs,
+	callback = function()
+		vim.treesitter.start()
+	end,
+})
