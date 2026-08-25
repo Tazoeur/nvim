@@ -1,8 +1,8 @@
 vim.pack.add({'https://github.com/stevearc/oil.nvim'})
-
 require("oil").setup()
-
 vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
+
+vim.pack.add({'https://github.com/christoomey/vim-tmux-navigator'})
 
 vim.pack.add({
 "https://github.com/nvim-lua/plenary.nvim", -- dependency for telescope
