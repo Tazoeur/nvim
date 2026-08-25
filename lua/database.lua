@@ -346,5 +346,5 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.o.statusline = vim.o.statusline
 	.. "%{index(['sql','mysql','plsql'], &filetype) >= 0 && !empty(get(b:,'bq_estimate','')) ? '  BigQuery ~' . b:bq_estimate : ''}"
 
-vim.keymap.set("n", "<leader>bu", "<cmd>DBUIToggle<CR>", { desc = "Toggle DB UI (BigQuery)" })
+vim.keymap.set("n", "<leader>ub", "<cmd>DBUIToggle<CR>", { desc = "Toggle DB UI (BigQuery)" })
 vim.keymap.set("n", "<leader>bf", "<cmd>DBUIFindBuffer<CR>", { desc = "Find DB buffer" })

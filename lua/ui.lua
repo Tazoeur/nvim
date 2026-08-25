@@ -67,6 +67,8 @@ require('snacks').setup( {
 }
 )
 
+vim.keymap.set('n', '<leader>un', function() Snacks.notifier.show_history() end, { desc = 'UI: notification history' })
+
 --[[
 return {
   'RRethy/vim-illuminate',
