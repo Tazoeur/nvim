@@ -31,6 +31,19 @@ vim.api.nvim_create_autocmd('LspAttach', {
 })
 
 
+-- vim-dadbod-ui's drawer tree (autoload/db_ui/drawer.vim) indents each
+-- nesting level by `shiftwidth()` spaces. Since shiftwidth isn't set
+-- globally it falls back to the default tabstop of 8, making the
+-- connection/schema/table tree needlessly wide -- so give the drawer's own
+-- filetype a smaller shiftwidth instead of changing it everywhere.
+vim.api.nvim_create_autocmd('FileType', {
+	pattern = 'dbui',
+	callback = function()
+		vim.opt_local.shiftwidth = 2
+	end,
+})
+
+
 -- Highlight when yanking (copying) text
 --  See `:help vim.highlight.on_yank()`
 vim.api.nvim_create_autocmd('TextYankPost', {

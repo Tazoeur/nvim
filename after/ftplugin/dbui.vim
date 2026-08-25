@@ -25,6 +25,25 @@ function! s:on_select_line() abort
   " <Plug>/normal-mode indirection.
   call drawer.toggle_line('edit')
 
+  " toggle_line('edit') on a 'db' item is what (re)populates db.schemas.list
+  " (populate_schemas() in drawer.vim) -- for bigquery that comes straight
+  " from `SELECT schema_name FROM INFORMATION_SCHEMA.SCHEMATA` with no
+  " ORDER BY (autoload/db_ui/schemas.vim), so datasets show up in whatever
+  " order the API returned them. Table lists underneath are already sorted
+  " by populate_schemas() itself; the dataset list one level up isn't, so
+  " sort it here and force a re-render (toggle_line already rendered once,
+  " with the unsorted list).
+  if item.type ==? 'db'
+    let db = drawer.dbui.dbs[item.dbui_db_key_name]
+    if has_key(db, 'schemas')
+      let sorted = sort(copy(db.schemas.list))
+      if sorted !=# db.schemas.list
+        let db.schemas.list = sorted
+        call drawer.render()
+      endif
+    endif
+  endif
+
   " was_expanded means it just got expanded (toggle_line flips it) --
   " ignore the collapse direction.
   if is_schema && !was_expanded

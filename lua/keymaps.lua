@@ -49,7 +49,7 @@ function reload_config()
 
 	vim.notify('Neovim configuration file reloaded', vim.log.levels.INFO)
 end
-vim.keymap.set('n', '<leader>r', reload_config)
+vim.keymap.set('n', '<leader>r', reload_config, { desc = 'Reload Neovim configuration' })
 
 vim.keymap.set('n', '<leader>cp', function()
   local file_path = vim.fn.expand('%')
