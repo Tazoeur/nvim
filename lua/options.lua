@@ -77,3 +77,4 @@ vim.opt.spell = true
 
 -- others
 vim.opt.swapfile = false
+

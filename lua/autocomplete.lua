@@ -15,6 +15,11 @@ require("blink.cmp").setup({
     ["<C-n>"] = { "select_next", "fallback" },
     ["<C-p>"] = { "select_prev", "fallback" },
     ["<C-y>"] = { "select_and_accept" },
+    -- Both bound to the same thing: over a terminal (this config runs inside
+    -- tmux) Ctrl-Space is unreliable -- many terminals/multiplexers deliver
+    -- it as a raw NUL byte, which Neovim reports as <Nul>, not <C-Space>.
+    ["<C-space>"] = { "show" },
+    ["<Nul>"] = { "show" },
   },
 
   completion = {
