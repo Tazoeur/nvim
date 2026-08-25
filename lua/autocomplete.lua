@@ -1,21 +1,42 @@
-vim.opt.completeopt = "menu,menuone,noselect,popup" -- Ensures the menu appears even for a single match and uses the native popup window.
-vim.o.autocomplete = true -- Enables the overall completion feature.
+-- blink.cmp replaces native vim.lsp.completion: it draws its own popup, so it
+-- manages completeopt itself. LSP capabilities (advertising snippet support,
+-- etc.) are wired up in lsp.lua via blink.cmp.get_lsp_capabilities().
+vim.pack.add({ { src = "https://github.com/Saghen/blink.cmp", version = "v1.10.2" } })
 
-vim.api.nvim_create_autocmd("LspAttach", {
-  group = vim.api.nvim_create_augroup("lsp_completion", { clear = true }),
-  callback = function(args)
-    local client_id = args.data.client_id
-    if not client_id then
-      return
-    end
-
-    local client = vim.lsp.get_client_by_id(client_id)
-    if client and client:supports_method("textDocument/completion") then
-      -- Enable native LSP completion for this client + buffer
-      vim.lsp.completion.enable(true, client_id, args.buf, {
-        autotrigger = true,   -- auto-show menu as you type (recommended)
-        -- You can also set { autotrigger = false } and trigger manually with <C-x><C-o>
-      })
-    end
+require("blink.cmp").setup({
+  -- Telescope's prompt is a buftype=prompt buffer; keep blink out of it (and
+  -- any other prompt-style picker) entirely.
+  enabled = function()
+    return vim.bo.buftype ~= "prompt"
   end,
+
+  keymap = {
+    preset = "none",
+    ["<C-n>"] = { "select_next", "fallback" },
+    ["<C-p>"] = { "select_prev", "fallback" },
+    ["<C-y>"] = { "select_and_accept" },
+  },
+
+  completion = {
+    list = {
+      selection = {
+        preselect = true, -- first match is highlighted...
+        auto_insert = false, -- ...but never written into the buffer until <C-y>
+      },
+    },
+  },
+
+  sources = {
+    default = { "lsp", "path", "buffer" },
+    per_filetype = {
+      sql = { "dadbod", "lsp", "buffer" },
+      mysql = { "dadbod", "lsp", "buffer" },
+      plsql = { "dadbod", "lsp", "buffer" },
+    },
+    providers = {
+      -- Reuses vim-dadbod-completion's own blink source (table/column/alias
+      -- completion) instead of its legacy omnifunc path.
+      dadbod = { name = "Dadbod", module = "vim_dadbod_completion.blink" },
+    },
+  },
 })

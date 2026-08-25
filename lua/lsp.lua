@@ -1,6 +1,12 @@
 vim.pack.add({ "https://github.com/j-hui/fidget.nvim" })
 require("fidget").setup({})
 
+-- blink.cmp is set up in autocomplete.lua; loading it here too is a harmless
+-- no-op (vim.pack.add dedupes by URL) and lets every server pick up its LSP
+-- capabilities (snippet support, etc.) below.
+vim.pack.add({ { src = "https://github.com/Saghen/blink.cmp", version = "v1.10.2" } })
+vim.lsp.config("*", { capabilities = require("blink.cmp").get_lsp_capabilities() })
+
 --  This function gets run when an LSP attaches to a particular buffer.
 --    That is to say, every time a new file is opened that is associated with
 --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
