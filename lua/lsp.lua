@@ -77,6 +77,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
 	end,
 })
 
+-- root_dir string -> {project_id=.., location=..} for a DBUI-opened bqls
+-- root (see the `bqls` server config below), read back by that config's
+-- own `on_init`.
+local bqls_dbui_settings = {}
+
 -- Enable the following language servers
 --  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
 --  See `:help lsp-config` for information about keys and how to configure
@@ -95,6 +100,68 @@ local servers = {
 	-- ts_ls = {},
 
 	stylua = {}, -- Used to format Lua code
+
+	-- bqls (BigQuery language server) defaults to `gcloud config get
+	-- project` and location "US". DBUI's ad-hoc query/table buffers (see
+	-- vim-dadbod-ui's autoload/db_ui/query.vim setup_buffer, which sets
+	-- b:dbui_db_key_name on every one it opens) live in temp files with no
+	-- `.git` -- bqls's only root_marker -- so without this they'd fall
+	-- back to whatever root Neovim's cwd resolves to and inherit the
+	-- gcloud default, wrong for these buffers' actual (BigQuery) project.
+	--
+	-- Give each such buffer's BigQuery project its own synthetic root (so
+	-- it gets its own bqls client, one per project) and push the real
+	-- settings via `on_init`. That runs right after the client's
+	-- `initialize` response and strictly before Neovim's first
+	-- `textDocument/didOpen` for any of its buffers (see
+	-- vim.lsp.Client:_initialize/`on_attach` in the Neovim runtime) --
+	-- doing this from `LspAttach` instead is too late: didOpen has already
+	-- fired with the wrong project by then, bqls's first diagnostics pass
+	-- already ran against it, and it doesn't recompute just because config
+	-- changed afterward.
+	--
+	-- A dbt model or any other .sql file inside a real git repo still
+	-- resolves its root via `.git` as normal, untouched by this.
+	bqls = {
+		root_dir = function(bufnr, on_dir)
+			local db_url = vim.b[bufnr].dbui_db_key_name and vim.b[bufnr].db
+			local project = db_url and db_url:match("^bigquery://([^:/]*)")
+			if not project or project == "" then
+				on_dir(vim.fs.root(bufnr, { ".git" }))
+				return
+			end
+			local root = "bqls-dbui://" .. project
+			local region = vim.g.vim_dadbod_completion_bigquery_region
+			bqls_dbui_settings[root] = {
+				project_id = project,
+				location = region and region:match("^region%-(.+)$"),
+			}
+			on_dir(root)
+		end,
+		on_init = function(client)
+			local settings = bqls_dbui_settings[client.config.root_dir]
+			if settings then
+				client:notify("workspace/didChangeConfiguration", { settings = settings })
+			end
+			-- bqls's own dry-run cost estimate (the "This query will process
+			-- ... when run" window/showMessage) only fires from its
+			-- textDocument/didSave handler -- database.lua's own live estimate
+			-- (b:bq_estimate in the statusline) already runs the identical dry
+			-- run on every edit, so bqls's copy is pure waste, not just a
+			-- redundant popup. bqls's `initialize` response declares
+			-- textDocumentSync as a bare sync-kind number rather than a full
+			-- options object, so Neovim's client fills in the missing `save`
+			-- as enabled ({includeText = false}) by default, which is what
+			-- causes every :w to actually forward textDocument/didSave to it.
+			-- Clearing that here (before any save can happen) makes Neovim
+			-- never send didSave to this client at all, so bqls's dry run
+			-- (and its redundant diagnostics-on-save pass -- diagnostics
+			-- already refresh continuously via didChange) never runs.
+			if client.server_capabilities.textDocumentSync then
+				client.server_capabilities.textDocumentSync.save = false
+			end
+		end,
+	},
 
 	-- Special Lua Config, as recommended by neovim help docs
 	lua_ls = {
